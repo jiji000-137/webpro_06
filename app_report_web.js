@@ -1,20 +1,13 @@
-"use strict"; // 講義の指定通り strict モードを有効化
+"use strict"; 
 
 const express = require("express");
 const app = express();
 
-// EJSテンプレートエンジンの設定
 app.set('view engine', 'ejs');
 
-// POSTリクエストのボディ（パラメータ）を受け取る設定
 app.use(express.urlencoded({ extended: true }));
 
-// 静的ファイル（HTML, 画像, CSS）の配信設定
 app.use('/public', express.static(__dirname + '/public'));
-
-// ==================================================
-// データセットの初期化 (変数はメモリ内に記録)
-// ==================================================
 
 // System A: RPGキャラクター図鑑
 let characters = [
@@ -33,10 +26,6 @@ let playlist = [
     { id: 1, title: "Shape of You", artist: "Ed Sheeran", genre: "Pop", year: 2017 },
     { id: 2, title: "Bohemian Rhapsody", artist: "Queen", genre: "Rock", year: 1975 }
 ];
-
-// ==================================================
-// 各システムのルーティング (統一した操作体系)
-// ==================================================
 
 // --- System B: To Do リスト (/todo) ---
 
@@ -92,8 +81,6 @@ app.get("/todo/delete/:number", (req, res) => {
     todos.splice(req.params.number, 1); // 指定インデックスを削除
     res.redirect('/todo');
 });
-
-// ※ /rpg, /music も同様の構造で実装
 
 // サーバー起動
 app.listen(8080, () => console.log("Example app listening on port 8080!"));
