@@ -3,84 +3,93 @@
 const express = require("express");
 const app = express();
 
-app.set('view engine', 'ejs');
-
 app.use(express.urlencoded({ extended: true }));
+app.set("view engine", "ejs");
 
-app.use('/public', express.static(__dirname + '/public'));
 
-// System A: RPGキャラクター図鑑
 let characters = [
-    { id: 1, name: "勇者アベル", job: "勇者", level: 50, hp: 500, bio: "伝説の剣を探している。" },
-    { id: 2, name: "魔法使いマリ", job: "魔法使い", level: 48, hp: 250, bio: "古代魔法の研究家。" }
+    { id: 1, name: "アルス", job: "勇者", hp: 120, mp: 30 },
+    { id: 2, name: "ルナ", job: "魔法使い", hp: 60, mp: 150 }
 ];
 
-// System B: To Do リスト
 let todos = [
-    { id: 1, task: "レポート作成", deadline: "2025-12-25", priority: "高", status: "未着手" },
-    { id: 2, task: "食材の買い出し", deadline: "2025-12-23", priority: "中", status: "完了" }
+    { id: 1, task: "課題提出", deadline: "2025-01-10", status: "未完了" },
+    { id: 2, task: "買い物", deadline: "2024-12-24", status: "完了" }
 ];
 
-// System C: 音楽プレイリスト
-let playlist = [
-    { id: 1, title: "Shape of You", artist: "Ed Sheeran", genre: "Pop", year: 2017 },
-    { id: 2, title: "Bohemian Rhapsody", artist: "Queen", genre: "Rock", year: 1975 }
+let music = [
+    { id: 1, title: "アイラブユー", artist: "back number", length: "3:56" },
+    { id: 2, title: "ベルベットの詩", artist: "back number", length: "4:14" }
 ];
 
-// --- System B: To Do リスト (/todo) ---
+// トップページ
+app.get("/", (req, res) => { res.render("top"); });
 
-// 1. 一覧表示
-app.get("/todo", (req, res) => {
-    res.render('todo_list', { data: todos });
+function createRoutes(resourceName, dataArray, viewPrefix) {
+    // 一覧 
+    app.get(`/${resourceName}`, (req, res) => {
+        res.render(`${viewPrefix}_list`, { data: dataArray });
+    });
+
+    // 新規登録フォーム表示
+    app.get(`/${resourceName}/create`, (req, res) => {
+        res.render(`${viewPrefix}_new`);
+    });
+
+    // 詳細表示
+    app.get(`/${resourceName}/:number`, (req, res) => {
+        const n = req.params.number; 
+        res.render(`${viewPrefix}_detail`, { id: n, data: dataArray[n] });
+    });
+
+    // 削除処理
+    app.get(`/${resourceName}/delete/:number`, (req, res) => {
+        dataArray.splice(req.params.number, 1);  
+        res.redirect(`/${resourceName}`);
+    });
+
+    // 編集フォーム表示
+    app.get(`/${resourceName}/edit/:number`, (req, res) => {
+        const n = req.params.number;
+        res.render(`${viewPrefix}_edit`, { id: n, data: dataArray[n] });
+    });
+}
+
+createRoutes("characters", characters, "char");
+createRoutes("todos", todos, "todo");
+createRoutes("music", music, "music");
+
+// RPG新規登録
+app.post("/characters", (req, res) => {
+    characters.push({ id: characters.length + 1, ...req.body }); // データの追加 [cite: 160]
+    res.redirect("/characters");
+});
+// RPG更新
+app.post("/characters/update/:number", (req, res) => {
+    characters[req.params.number] = { id: characters[req.params.number].id, ...req.body };
+    res.redirect("/characters");
 });
 
-// 2. 新規登録フォーム表示
-app.get("/todo/create", (req, res) => {
-    // 講義通り HTMLファイルを redirect するか、ejsを render する
-    res.redirect('/public/todo_new.html');
+// To-Do新規登録
+app.post("/todos", (req, res) => {
+    todos.push({ id: todos.length + 1, ...req.body });
+    res.redirect("/todos");
+});
+// To-Do更新
+app.post("/todos/update/:number", (req, res) => {
+    todos[req.params.number] = { id: todos[req.params.number].id, ...req.body };
+    res.redirect("/todos");
 });
 
-// 3. 新規登録処理
-app.post("/todo", (req, res) => {
-    const newId = todos.length > 0 ? todos[todos.length - 1].id + 1 : 1;
-    const item = {
-        id: newId,
-        task: req.body.task,
-        deadline: req.body.deadline,
-        priority: req.body.priority,
-        status: req.body.status
-    };
-    todos.push(item); // 配列に追加
-    res.redirect('/todo');
+// 音楽新規登録
+app.post("/music", (req, res) => {
+    music.push({ id: music.length + 1, ...req.body });
+    res.redirect("/music");
+});
+// 音楽更新
+app.post("/music/update/:number", (req, res) => {
+    music[req.params.number] = { id: music[req.params.number].id, ...req.body };
+    res.redirect("/music");
 });
 
-// 4. 詳細表示
-app.get("/todo/:number", (req, res) => {
-    const number = req.params.number; // 配列のインデックスを利用
-    res.render('todo_detail', { id: number, data: todos[number] });
-});
-
-// 5. 編集フォーム表示
-app.get("/todo/edit/:number", (req, res) => {
-    const number = req.params.number;
-    res.render('todo_edit', { id: number, data: todos[number] });
-});
-
-// 6. 更新処理
-app.post("/todo/update/:number", (req, res) => {
-    const n = req.params.number;
-    todos[n].task = req.body.task;
-    todos[n].deadline = req.body.deadline;
-    todos[n].priority = req.body.priority;
-    todos[n].status = req.body.status;
-    res.redirect('/todo');
-});
-
-// 7. 削除処理
-app.get("/todo/delete/:number", (req, res) => {
-    todos.splice(req.params.number, 1); // 指定インデックスを削除
-    res.redirect('/todo');
-});
-
-// サーバー起動
-app.listen(8080, () => console.log("Example app listening on port 8080!"));
+app.listen(8080, () => console.log("Server running at http://localhost:8080"));
